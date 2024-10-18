@@ -1,17 +1,17 @@
 <?php
 /*
  *  Copyright 2024.  Baks.dev <admin@baks.dev>
- *
+ *  
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is furnished
  *  to do so, subject to the following conditions:
- *
+ *  
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *
+ *  
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
@@ -28,9 +28,11 @@ use BaksDev\Avito\Promotion\Entity\Promotion\AvitoProductPromotion;
 use BaksDev\Avito\Promotion\Type\AvitoPromotionUid;
 use BaksDev\Avito\Promotion\UseCase\NewEdit\Promotion\AvitoProductPromotionDTO;
 use BaksDev\Avito\Promotion\UseCase\NewEdit\Promotion\AvitoProductPromotionHandler;
+use BaksDev\Products\Product\Type\Id\ProductUid;
 use BaksDev\Products\Product\Type\Offers\ConstId\ProductOfferConst;
 use BaksDev\Products\Product\Type\Offers\Variation\ConstId\ProductVariationConst;
 use BaksDev\Products\Product\Type\Offers\Variation\Modification\ConstId\ProductModificationConst;
+use BaksDev\Users\Profile\UserProfile\Type\Id\UserProfileUid;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\Attribute\When;
@@ -53,9 +55,7 @@ class AvitoProductPromotionEditTest extends KernelTestCase
          * @var AvitoProductPromotion $productPromotion
          */
         $productPromotion = $em->getRepository(AvitoProductPromotion::class)->findOneBy([
-            'offer' => ProductOfferConst::TEST,
-            'variation' => ProductVariationConst::TEST,
-            'modification' => ProductModificationConst::TEST,
+            'profile' => UserProfileUid::TEST,
         ]);
 
         self::assertNotNull($productPromotion);
@@ -86,7 +86,7 @@ class AvitoProductPromotionEditTest extends KernelTestCase
         $em = self::getContainer()->get(EntityManagerInterface::class);
 
         $avitoProductPromotions = $em->getRepository(AvitoProductPromotion::class)
-            ->findBy(['company' => AvitoPromotionUid::TEST]);
+            ->findBy(['profile' => UserProfileUid::TEST]);
 
         foreach($avitoProductPromotions as $promotion)
         {

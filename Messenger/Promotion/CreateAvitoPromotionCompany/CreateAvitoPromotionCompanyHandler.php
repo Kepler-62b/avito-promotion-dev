@@ -29,7 +29,9 @@ namespace BaksDev\Avito\Promotion\Messenger\Promotion\CreateAvitoPromotionCompan
 use BaksDev\Avito\Promotion\Api\CreatePromotionCompanyRequest;
 use BaksDev\Avito\Promotion\Entity\Promotion\AvitoProductPromotion;
 use BaksDev\Avito\Promotion\Messenger\Promotion\AvitoProductPromotionMessage;
+use BaksDev\Avito\Promotion\UseCase\NewEdit\Promotion\AvitoProductPromotionDTO;
 use BaksDev\Core\Messenger\MessageDispatchInterface;
+use BaksDev\Reference\Money\Type\Money;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -38,16 +40,16 @@ use Symfony\Component\Messenger\Stamp\DelayStamp;
 #[AsMessageHandler]
 final readonly class CreateAvitoPromotionCompanyHandler
 {
-    protected LoggerInterface $logger;
+    private LoggerInterface $logger;
 
     public function __construct(
-        LoggerInterface $avitoPromotionLogger,
+        LoggerInterface $avitoBoardLogger,
         private EntityManagerInterface $em,
         private CreatePromotionCompanyRequest $request,
-        private MessageDispatchInterface $messageDispatch,
+        private MessageDispatchInterface $messageDispatch
     )
     {
-        $this->logger = $avitoPromotionLogger;
+        $this->logger = $avitoBoardLogger;
     }
 
     public function __invoke(AvitoProductPromotionMessage $message): void
@@ -58,30 +60,32 @@ final readonly class CreateAvitoPromotionCompanyHandler
 
         if($promotionProduct === null)
         {
-            $this->logger->critical(
-                'Ошибка получения рекламного продукта '.$promotionProduct->getArticle(),
-                [__FILE__.':'.__LINE__],
-            );
-
             return;
         }
 
+        $avitoProductPromotionDTO = new AvitoProductPromotionDTO();
+        $promotionProduct->getDto($avitoProductPromotionDTO);
+
+        $budget = new Money($avitoProductPromotionDTO->getBudget());
+
         // id созданной компании
         $created = $this->request
-            ->profile($promotionProduct->getProfile())
-            ->create($promotionProduct);
+            ->profile($avitoProductPromotionDTO->getProfile())
+            ->article($avitoProductPromotionDTO->getArticle())
+            ->budget($budget)
+            ->create();
 
         if(false === $created)
         {
             $this->logger->critical(
-                'Ошибка при создании рекламной компании для продукта с артикулом'.$promotionProduct->getArticle(),
-                [__FILE__.':'.__LINE__],
+                'Ошибка при создании рекламной компании для продукта с артикулом'.$avitoProductPromotionDTO->getArticle(),
+                [__FILE__.':'.__LINE__]
             );
 
             $this->messageDispatch->dispatch(
                 message: $message,
                 stamps: [new DelayStamp(3600000)], // задержка 1 час для повторного запроса на создание компании
-                transport: (string) $promotionProduct->getProfile(),
+                transport: (string) $avitoProductPromotionDTO->getProfile(),
             );
         }
     }

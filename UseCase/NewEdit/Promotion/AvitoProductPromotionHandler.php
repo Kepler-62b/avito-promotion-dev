@@ -37,6 +37,7 @@ final class AvitoProductPromotionHandler extends AbstractHandler
         $this->setCommand($command);
 
         $entity = $this->prePersistOrUpdate(AvitoProductPromotion::class, [
+            'product' => $command->getProduct(),
             'offer' => $command->getOffer(),
             'variation' => $command->getVariation(),
             'modification' => $command->getModification(),

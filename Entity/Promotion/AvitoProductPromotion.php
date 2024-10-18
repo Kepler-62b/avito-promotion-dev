@@ -30,6 +30,7 @@ use BaksDev\Avito\Promotion\Type\AvitoPromotionUid;
 use BaksDev\Avito\Promotion\Type\Promotion\AvitoProductPromotionUid;
 use BaksDev\Core\Entity\EntityState;
 use BaksDev\Products\Category\Type\Section\Field\Id\CategoryProductSectionFieldUid;
+use BaksDev\Products\Product\Type\Id\ProductUid;
 use BaksDev\Products\Product\Type\Offers\ConstId\ProductOfferConst;
 use BaksDev\Products\Product\Type\Offers\Variation\ConstId\ProductVariationConst;
 use BaksDev\Products\Product\Type\Offers\Variation\Modification\ConstId\ProductModificationConst;
@@ -41,10 +42,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 /** @see AvitoProductPromotionDTO */
 #[ORM\Entity]
-#[ORM\Index(columns: ['article'])]
+#[ORM\Index(columns: ['product'])]
 #[ORM\Index(columns: ['offer'])]
 #[ORM\Index(columns: ['variation'])]
 #[ORM\Index(columns: ['modification'])]
+#[ORM\Index(columns: ['article'])]
 #[ORM\Index(columns: ['company'])]
 #[ORM\Index(columns: ['profile'])]
 #[ORM\Table(name: 'avito_promotion_product')]
@@ -56,12 +58,15 @@ class AvitoProductPromotion extends EntityState
     #[ORM\Column(type: AvitoProductPromotionUid::TYPE)]
     private AvitoProductPromotionUid $id;
 
-    #[ORM\Column(type: Types::STRING, nullable: false)]
-    private string $article;
+    /** ID продукта (не уникальное) */
+    #[Assert\NotBlank]
+    #[Assert\Uuid]
+    #[ORM\Column(type: ProductUid::TYPE, nullable: false)]
+    private ProductUid $product;
 
     /** Константа ТП */
-    #[ORM\Column(type: ProductOfferConst::TYPE, nullable: false)]
-    private ?ProductOfferConst $offer;
+    #[ORM\Column(type: ProductOfferConst::TYPE, nullable: true)]
+    private ?ProductOfferConst $offer = null;
 
     /** Константа множественного варианта */
     #[ORM\Column(type: ProductVariationConst::TYPE, nullable: true)]
@@ -75,6 +80,10 @@ class AvitoProductPromotion extends EntityState
     #[ORM\Column(type: CategoryProductSectionFieldUid::TYPE, nullable: true)]
     private ?CategoryProductSectionFieldUid $property = null;
 
+    /** Артикул продукта */
+    #[ORM\Column(type: Types::STRING, nullable: false)]
+    private string $article;
+
     /** Рекламная компания */
     #[ORM\Column(type: AvitoPromotionUid::TYPE, nullable: false)]
     private AvitoPromotionUid $company;
@@ -87,7 +96,7 @@ class AvitoProductPromotion extends EntityState
     #[ORM\Column(type: Types::INTEGER, nullable: false)]
     private int $budget;
 
-    /** Дата создания/обновления рекламного продукта */
+    /** Дата создания рекламного продукта */
     #[Assert\NotBlank]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: false)]
     private \DateTimeImmutable $created;
@@ -127,25 +136,5 @@ class AvitoProductPromotion extends EntityState
         }
 
         throw new InvalidArgumentException(sprintf('Class %s interface error', $dto::class));
-    }
-
-    public function getBudget(): int
-    {
-        return $this->budget;
-    }
-
-    public function getProfile(): UserProfileUid
-    {
-        return $this->profile;
-    }
-
-    public function getArticle(): string
-    {
-        return $this->article;
-    }
-
-    public function getCreated(): \DateTimeImmutable
-    {
-        return $this->created;
     }
 }

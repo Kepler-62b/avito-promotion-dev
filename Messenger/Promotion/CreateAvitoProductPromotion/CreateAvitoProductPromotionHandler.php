@@ -38,7 +38,7 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler]
 final readonly class CreateAvitoProductPromotionHandler
 {
-    protected LoggerInterface $logger;
+    private LoggerInterface $logger;
 
     public function __construct(
         LoggerInterface $avitoPromotionLogger,
@@ -81,7 +81,7 @@ final readonly class CreateAvitoProductPromotionHandler
 
             /** Все заказы по фильтрам */
             $orders = $this->allOrders
-                ->date('-1 week')
+                ->date(\DateInterval::createFromDateString('1 week'))
                 ->category($promoCompany['promo_category'])
                 ->filters($filters)
                 ->profile($promoCompany['promo_profile'])
@@ -104,28 +104,29 @@ final readonly class CreateAvitoProductPromotionHandler
             {
                 $dto = new AvitoProductPromotionDTO();
 
+                // уникальные идентификаторы записи AvitoProductPromotion
+                $dto->setProduct($order['orders_product']);
                 $dto->setOffer($order['product_offer_const']);
                 $dto->setVariation($order['product_variation_const']);
                 $dto->setModification($order['product_modification_const']);
                 $dto->setArticle($order['product_article']);
 
+                // информация для отправки на api Авито
                 $dto->setProperty($order['product_offer_const']);
                 $dto->setCreated(new \DateTimeImmutable('now', new \DateTimeZone('UTC')));
                 $dto->setCompany($promoCompany['promo_company']);
                 $dto->setProfile($profile);
 
-                // Добавить к дневному бюджету процент на количество продаж
-
                 /**
-                 * Применяем формулу расчета бюджета
+                 * Применяем формулу расчета бюджета - Добавить к дневному бюджету процент на количество проданного товара
                  */
-                $calculate = intval(round($promoCompany['promo_budget'] / 100 * $order['orders_count']));
-                $budget = $promoCompany['promo_budget'] + $calculate;
+                $formula = (int) round(($promoCompany['promo_budget'] / 100 * $order['orders_count']));
+                $budget = $promoCompany['promo_budget'] + $formula;
 
                 // проверить что бюджет не превысил лимит
-                // если превысили лимит - бюджет равен лимит
                 if($budget > $promoCompany['promo_limit'])
                 {
+                    // если превысили лимит - бюджет равен лимит
                     $budget = $promoCompany['promo_limit'];
                 }
 
@@ -134,11 +135,12 @@ final readonly class CreateAvitoProductPromotionHandler
                 // добавление заказа для отслеживания повторного обращения к нему из другой рекламной компании
                 $deduplicator->deduplication(
                     [
+                        $dto->getProduct(),
                         $dto->getOffer(),
                         $dto->getVariation(),
                         $dto->getModification(),
                         $profile,
-                    ],
+                    ]
                 );
 
                 if($deduplicator->isExecuted())

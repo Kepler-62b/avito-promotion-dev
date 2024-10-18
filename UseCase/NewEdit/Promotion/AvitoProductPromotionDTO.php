@@ -30,6 +30,8 @@ use BaksDev\Avito\Promotion\Entity\Promotion\AvitoProductPromotionInterface;
 use BaksDev\Avito\Promotion\Type\AvitoPromotionUid;
 use BaksDev\Avito\Promotion\Type\Promotion\AvitoProductPromotionUid;
 use BaksDev\Products\Category\Type\Section\Field\Id\CategoryProductSectionFieldUid;
+use BaksDev\Products\Product\Entity\Product;
+use BaksDev\Products\Product\Type\Id\ProductUid;
 use BaksDev\Products\Product\Type\Offers\ConstId\ProductOfferConst;
 use BaksDev\Products\Product\Type\Offers\Variation\ConstId\ProductVariationConst;
 use BaksDev\Products\Product\Type\Offers\Variation\Modification\ConstId\ProductModificationConst;
@@ -39,20 +41,19 @@ use Symfony\Component\Validator\Constraints as Assert;
 /** @see AvitoProductPromotion */
 final class AvitoProductPromotionDTO implements AvitoProductPromotionInterface
 {
-    /**
-     * Идентификатор события
-     */
+    /** Идентификатор события */
     #[Assert\Uuid]
     private ?AvitoProductPromotionUid $id = null;
 
-    /** Артикул продукта (уникальное) */
+    /** ID продукта (не уникальное) */
     #[Assert\NotBlank]
-    private string $article;
+    #[Assert\Uuid]
+    private ProductUid $product;
 
     #[Assert\NotBlank]
     #[Assert\Uuid]
     /** Константа ТП */
-    private ProductOfferConst $offer;
+    private ?ProductOfferConst $offer = null;
 
     #[Assert\Uuid]
     /** Константа множественного варианта */
@@ -66,16 +67,24 @@ final class AvitoProductPromotionDTO implements AvitoProductPromotionInterface
     /** Константа модификации множественного варианта */
     private ?CategoryProductSectionFieldUid $property = null;
 
-    /**  */
-    #[Assert\Uuid]
-    private ?AvitoPromotionUid $company = null;
+    /** Артикул продукта */
+    #[Assert\NotBlank]
+    private string $article;
 
+    /** Рекламная компания */
+    #[Assert\Uuid]
+    #[Assert\NotBlank]
+    private AvitoPromotionUid $company;
+
+    /** Профиль пользователя */
     #[Assert\NotBlank]
     private UserProfileUid $profile;
 
+    /** Рекламный бюджет на продукт */
     #[Assert\NotBlank]
     private int $budget;
 
+    /** Дата создания рекламного продукта */
     #[Assert\NotBlank]
     private \DateTimeImmutable $created;
 
@@ -89,12 +98,32 @@ final class AvitoProductPromotionDTO implements AvitoProductPromotionInterface
         return $this->id;
     }
 
+    public function getProduct(): ProductUid
+    {
+        return $this->product;
+    }
+
+    public function setProduct(Product|ProductUid|string $product): void
+    {
+        if($product instanceof Product)
+        {
+            $product = $product->getId();
+        }
+
+        if(is_string($product))
+        {
+            $product = new ProductUid($product);
+        }
+
+        $this->product = $product;
+    }
+
     public function getOffer(): ProductOfferConst
     {
         return $this->offer;
     }
 
-    public function setOffer(ProductOfferConst|string $offer): void
+    public function setOffer(ProductOfferConst|string|null $offer): void
     {
         if(is_string($offer))
         {
@@ -149,16 +178,6 @@ final class AvitoProductPromotionDTO implements AvitoProductPromotionInterface
         $this->property = $property;
     }
 
-    public function getStatus(): ?string
-    {
-        return $this->status;
-    }
-
-    public function setStatus(?string $status): void
-    {
-        $this->status = $status;
-    }
-
     public function getArticle(): string
     {
         return $this->article;
@@ -169,12 +188,12 @@ final class AvitoProductPromotionDTO implements AvitoProductPromotionInterface
         $this->article = $article;
     }
 
-    public function getCompany(): ?AvitoPromotionUid
+    public function getCompany(): AvitoPromotionUid
     {
         return $this->company;
     }
 
-    public function setCompany(AvitoPromotionUid|string|null $company): void
+    public function setCompany(AvitoPromotionUid|string $company): void
     {
         if(is_string($company))
         {
@@ -223,5 +242,6 @@ final class AvitoProductPromotionDTO implements AvitoProductPromotionInterface
 
         $this->profile = $profile;
     }
+
 
 }
